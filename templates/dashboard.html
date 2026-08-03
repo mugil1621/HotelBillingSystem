@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Hotel Billing Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+body{
+    background:#f3f5f7;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+.header{
+    background:#0d6efd;
+    color:white;
+    padding:25px;
+    border-radius:0 0 25px 25px;
+    text-align:center;
+    margin-bottom:30px;
+}
+
+.header h2{
+    font-weight:bold;
+}
+
+.card{
+    border:none;
+    border-radius:15px;
+    box-shadow:0 4px 10px rgba(0,0,0,.1);
+    transition:.3s;
+}
+
+.card:hover{
+    transform:translateY(-3px);
+}
+
+.card h2{
+    font-weight:bold;
+}
+
+.card h6{
+    color:#666;
+}
+
+.menu-btn{
+
+    height:60px;
+
+    font-size:18px;
+
+    font-weight:bold;
+
+    border-radius:12px;
+
+}
+
+.footer{
+
+    margin-top:40px;
+
+    text-align:center;
+
+    color:gray;
+
+    font-size:14px;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<!-- HEADER -->
+
+<div class="header">
+
+<h2>
+
+🍽 HOTEL ALADIVEERAN
+
+</h2>
+
+<p class="mb-1">
+
+Kalathamedu, Chathiram to Kurinjipadi Road
+
+</p>
+
+<p class="mb-2">
+
+📞 8056706036
+
+</p>
+
+<h5>
+
+Welcome {{ user }}
+
+</h5>
+
+</div>
+
+<div class="container">
+
+<!-- SUMMARY -->
+
+<div class="row">
+
+<div class="col-md-3 col-6 mb-3">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h6>Total Food Items</h6>
+
+<h2>{{ total_food }}</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-3 col-6 mb-3">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h6>Total Bills</h6>
+
+<h2>{{ total_bills }}</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-3 col-6 mb-3">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h6>Today's Sales</h6>
+
+<h2 class="text-success">
+
+₹{{ "%.2f"|format(today_sales) }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-3 col-6 mb-3">
+
+<div class="card">
+
+<div class="card-body text-center">
+
+<h6>Today's Profit</h6>
+
+<h2 class="text-primary">
+
+₹{{ "%.2f"|format(today_profit) }}
+
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- MENU -->
+
+<div class="d-grid gap-3 mt-4">
+
+<a href="/food" class="btn btn-success menu-btn">
+
+🍽 Food Management
+
+</a>
+
+<a href="/breakfast" class="btn btn-warning menu-btn">
+
+🥞 Breakfast Billing
+
+</a>
+
+<a href="/lunch" class="btn btn-primary menu-btn">
+
+🍛 Lunch Billing
+
+</a>
+
+<a href="/dinner" class="btn btn-danger menu-btn">
+
+🌙 Dinner Billing
+
+</a>
+
+<a href="/bill_history" class="btn btn-dark menu-btn">
+
+📜 Bill History
+
+</a>
+
+<a href="/expenses" class="btn btn-info menu-btn">
+
+💸 Expense Management
+
+</a>
+
+<a href="/reports" class="btn btn-secondary menu-btn">
+
+📊 Reports
+
+</a>
+
+<a href="/close_counter" class="btn btn-dark menu-btn">
+
+🔒 Close Counter
+
+</a>
+
+<a href="/logout" class="btn btn-outline-danger menu-btn">
+
+🚪 Logout
+
+</a>
+
+</div>
+<a href="/database" class="btn btn-primary menu-btn">
+
+💾 Database Backup
+
+</a>
+
+<!-- FOOTER -->
+
+<div class="footer">
+
+<hr>
+
+<b>HOTEL ALADIVEERAN</b>
+
+<br>
+
+Kalathamedu, Chathiram to Kurinjipadi Road
+
+<br>
+
+📞 8056706036
+
+<br><br>
+
+Hotel Billing System Version 1.0
+
+</div>
+
+</div>
+
+</body>
+
+</html>
