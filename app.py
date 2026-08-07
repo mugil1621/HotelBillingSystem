@@ -1,10 +1,9 @@
 import os
 import subprocess
-from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, session
-import pymysql
 import json
 from datetime import datetime
+from flask import Flask, render_template, request, redirect, session, url_for
+import pymysql
 
 app = Flask(__name__)
 app.secret_key = "hotel_secret_key"
@@ -171,29 +170,28 @@ def add_food():
 
     return redirect("/food")
 
-
 # ===========================
 # DELETE FOOD
 # ===========================
-
 @app.route("/delete_food/<int:id>")
 def delete_food(id):
-
-    if "user" not in session:
-        return redirect("/")
-
     cursor = connection.cursor()
-
+    # Check whether the food item is used in any bill
+    cursor.execute(
+        "SELECT COUNT(*) AS total FROM bill_items WHERE food_id=%s",
+        (id,)
+    )
+    used = cursor.fetchone()["total"]
+    if used > 0:
+        cursor.close()
+        return "Cannot delete. Food item already exists in previous bills."
     cursor.execute(
         "DELETE FROM food_items WHERE id=%s",
         (id,)
     )
-
+    connection.commit()
     cursor.close()
-
     return redirect("/food")
-
-
 # ===========================
 # BREAKFAST BILLING
 # ===========================
@@ -663,36 +661,148 @@ def close_counter():
         total_profit=total_profit
     )
 # ===========================
-# RUN APPLICATION
+# BACKUP DATABASE
 # ===========================
 
-if __name__ == "__main__":
-    app.run(debug=True)
 @app.route("/backup_database")
 def backup_database():
 
     if "user" not in session:
         return redirect("/")
 
-    backup_folder = "backups"
+    # Backup folder inside HotelBillingSystem
+    backup_folder = os.path.join(
+        app.root_path,
+        "backups"
+    )
 
     if not os.path.exists(backup_folder):
         os.makedirs(backup_folder)
 
-    filename = datetime.now().strftime("hotel_backup_%Y%m%d_%H%M%S.sql")
+    filename = datetime.now().strftime(
+        "hotel_backup_%Y%m%d_%H%M%S.sql"
+    )
 
-    backup_path = os.path.join(backup_folder, filename)
+    backup_path = os.path.join(
+        backup_folder,
+        filename
+    )
+
+    # XAMPP mysqldump path
+    mysqldump_path = r"C:\xampp\mysql\bin\mysqldump.exe"
 
     command = [
-        "mysqldump",
-        "-u", "root",
+        mysqldump_path,
+        "-u",
+        "root",
+        "--single-transaction",
+        "--routines",
+        "--events",
+        "--triggers",
         "hotel_billing"
     ]
 
-    with open(backup_path, "w", encoding="utf-8") as outfile:
-        subprocess.run(command, stdout=outfile)
+    try:
 
-    return redirect("/database")
+        # Run mysqldump and capture its output
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+
+        # Check whether mysqldump worked
+        if result.returncode != 0:
+
+            return f"""
+            <html>
+            <body style="font-family:Arial;padding:30px">
+
+                <h2 style="color:red;">
+                    ❌ Backup Failed
+                </h2>
+
+                <p>
+                    MySQL returned an error:
+                </p>
+
+                <pre>{result.stderr}</pre>
+
+                <a href="/database">
+                    ← Back to Database
+                </a>
+
+            </body>
+            </html>
+            """
+
+        # Make sure something was actually exported
+        if not result.stdout.strip():
+
+            return """
+            <html>
+            <body style="font-family:Arial;padding:30px">
+
+                <h2 style="color:red;">
+                    ❌ Backup Failed
+                </h2>
+
+                <p>
+                    mysqldump completed but produced an empty backup.
+                </p>
+
+                <p>
+                    Please check whether the hotel_billing database
+                    contains tables/data.
+                </p>
+
+                <a href="/database">
+                    ← Back to Database
+                </a>
+
+            </body>
+            </html>
+            """
+
+        # Write the actual SQL backup
+        with open(
+            backup_path,
+            "w",
+            encoding="utf-8"
+        ) as outfile:
+
+            outfile.write(result.stdout)
+
+        return redirect("/database")
+
+    except FileNotFoundError:
+
+        return """
+        <html>
+        <body style="font-family:Arial;padding:30px">
+
+            <h2 style="color:red;">
+                ❌ mysqldump.exe Not Found
+            </h2>
+
+            <p>
+                Make sure XAMPP is installed at:
+            </p>
+
+            <pre>C:\\xampp\\mysql\\bin\\mysqldump.exe</pre>
+
+            <a href="/database">
+                ← Back to Database
+            </a>
+
+        </body>
+        </html>
+        """
+# ===========================
+# RESTORE DATABASE
+# ===========================
+
 @app.route("/restore_database", methods=["POST"])
 def restore_database():
 
@@ -701,19 +811,58 @@ def restore_database():
 
     filename = request.form["filename"]
 
-    filepath = os.path.join("backups", filename)
+    filepath = os.path.join(
+        "backups",
+        filename
+    )
+
+    # XAMPP MySQL executable
+    mysql_path = r"C:\xampp\mysql\bin\mysql.exe"
 
     command = [
-        "mysql",
+        mysql_path,
         "-u",
         "root",
         "hotel_billing"
     ]
 
-    with open(filepath, "r", encoding="utf-8") as infile:
-        subprocess.run(command, stdin=infile)
+    try:
+
+        with open(
+            filepath,
+            "r",
+            encoding="utf-8"
+        ) as infile:
+
+            result = subprocess.run(
+                command,
+                stdin=infile,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+
+        if result.returncode != 0:
+
+            return f"""
+            <h3>Restore Failed</h3>
+            <p>{result.stderr}</p>
+            <a href="/database">← Back to Database</a>
+            """
+
+    except FileNotFoundError:
+
+        return """
+        <h3>Restore Failed</h3>
+        <p>MySQL executable was not found.</p>
+        <p>Please check the XAMPP installation path.</p>
+        <a href="/database">← Back to Database</a>
+        """
 
     return redirect("/database")
+# ===========================
+# DATABASE
+# ===========================
+
 @app.route("/database")
 def database():
 
@@ -725,17 +874,52 @@ def database():
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    files = sorted(os.listdir(folder), reverse=True)
+    files = sorted(
+        os.listdir(folder),
+        reverse=True
+    )
 
     return render_template(
         "database.html",
         files=files
     )
+
+
+# ===========================
+# DELETE BACKUP
+# ===========================
+
+@app.route("/delete_backup", methods=["POST"])
+def delete_backup():
+
+    if "user" not in session:
+        return redirect("/")
+
+    filename = request.form["filename"]
+
+    backup_folder = "backups"
+
+    filepath = os.path.join(backup_folder, filename)
+
+    if os.path.exists(filepath) and os.path.isfile(filepath):
+        os.remove(filepath)
+
+    return redirect("/database")
+
+# ===========================
+# LOGOUT
+# ===========================
+
 @app.route("/logout")
 def logout():
+
     session.clear()
+
     return redirect("/")
 
+# ===========================
+# RUN APPLICATION
+# ===========================
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    app.run(debug=True)
